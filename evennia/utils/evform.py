@@ -163,9 +163,12 @@ def _to_rect(lines):
 
 def _to_ansi(obj, regexable=False):
     "convert to ANSIString"
-    if isinstance(obj, str):
+    if isinstance(obj, ANSIString):
+        return obj
+    elif isinstance(obj, str):
         # since ansi will be parsed twice (here and in the normal ansi send), we have to
-        # escape the |-structure twice.
+        # escape the |-structure twice. TODO: This is tied to the default color-tag syntax
+        # which is not ideal for those wanting to replace/extend it ...
         obj = _ANSI_ESCAPE.sub(r"||||", obj)
     if isinstance(obj, dict):
         return dict((key, _to_ansi(value, regexable=regexable)) for key, value in obj.items())
@@ -175,7 +178,7 @@ def _to_ansi(obj, regexable=False):
         return ANSIString(obj, regexable=regexable)
 
 
-class EvForm(object):
+class EvForm:
     """
     This object is instantiated with a text file and parses
     it for rectangular form fields. It can then be fed a
@@ -460,40 +463,3 @@ class EvForm(object):
     def __str__(self):
         "Prints the form"
         return str(ANSIString("\n").join([line for line in self.form]))
-
-
-def _test():
-    "test evform. This is used by the unittest system."
-    form = EvForm("evennia.utils.tests.data.evform_example")
-
-    # add data to each tagged form cell
-    form.map(
-        cells={
-            "AA": "|gTom the Bouncer",
-            2: "|yGriatch",
-            3: "A sturdy fellow",
-            4: 12,
-            5: 10,
-            6: 5,
-            7: 18,
-            8: 10,
-            9: 3,
-            "F": "rev 1",
-        }
-    )
-    # create the EvTables
-    tableA = EvTable("HP", "MV", "MP", table=[["**"], ["*****"], ["***"]], border="incols")
-    tableB = EvTable(
-        "Skill",
-        "Value",
-        "Exp",
-        table=[
-            ["Shooting", "Herbalism", "Smithing"],
-            [12, 14, 9],
-            ["550/1200", "990/1400", "205/900"],
-        ],
-        border="incols",
-    )
-    # add the tables to the proper ids in the form
-    form.map(tables={"A": tableA, "B": tableB})
-    return str(form)
